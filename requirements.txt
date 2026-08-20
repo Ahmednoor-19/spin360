@@ -1,0 +1,25 @@
+# --- core API + data ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9          # UploadFile form parsing
+pydantic>=2.6
+SQLAlchemy>=2.0
+
+# --- queue ---
+rq>=1.16
+redis>=5.0
+
+# --- pipeline ---
+numpy>=1.26
+Pillow>=10.0
+opencv-python-headless>=4.9      # GrabCut fallback isolation
+trimesh>=4.0                     # GLB IO + geometry (normalize, mock, CPU render)
+rembg>=2.0                       # primary isolation backend (u2net); optional
+fal-client>=0.4                  # reconstruction provider (fal.ai TRELLIS/Hunyuan3D)
+requests>=2.31
+
+# --- dev / test ---
+pytest>=8.0
+
+# NOTE: Blender is NOT a pip dependency. Install it on the render host (or run the
+# "cpu" render backend). ffmpeg must be on PATH for the encode stage.

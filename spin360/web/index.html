@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spin360 — two shots to a turntable</title>
+<style>
+  :root{
+    --bg:#0d1014; --panel:#141920; --panel-2:#1a2029; --line:#252c36;
+    --ink:#eef0ec; --ink-dim:#9aa4b0; --ink-faint:#5c6675;
+    --tungsten:#e7b366;      /* warm key light */
+    --tungsten-soft:#f0cf9a;
+    --daylight:#78b6dd;      /* cool fill light */
+    --ok:#7fce9f; --bad:#e08a76;
+    --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% -10%, #171d25 0%, var(--bg) 55%) fixed,
+      var(--bg);
+    color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.45;
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:28px 24px 64px}
+
+  /* ---- masthead ---- */
+  header{display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand h1{font-size:22px;letter-spacing:-.02em;margin:0;font-weight:650}
+  .brand .dot{color:var(--tungsten)}
+  .brand .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint)}
+  .lede{font-size:13px;color:var(--ink-dim);max-width:52ch;margin:0}
+
+  /* ---- layout ---- */
+  .stage{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;margin-top:26px}
+  @media(max-width:860px){.stage{grid-template-columns:1fr}}
+
+  /* ---- turntable dial (the signature) ---- */
+  .viewer{background:linear-gradient(180deg,var(--panel) 0%,#0f141a 100%);
+    border:1px solid var(--line);border-radius:16px;padding:22px;
+    display:flex;flex-direction:column;align-items:center;gap:16px;min-height:440px;
+    justify-content:center;position:relative;overflow:hidden}
+  .dial{position:relative;width:320px;height:320px;max-width:78vw;max-height:78vw}
+  .dial svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+  .dial .track{fill:none;stroke:var(--line);stroke-width:2}
+  .dial .sweep{fill:none;stroke:url(#lg);stroke-width:4;stroke-linecap:round;
+    transition:stroke-dashoffset .5s ease}
+  .ticks line{stroke:var(--ink-faint);stroke-width:1}
+  .well{position:absolute;inset:26px;border-radius:50%;overflow:hidden;
+    background:
+      radial-gradient(70% 55% at 50% 34%, #2a323d 0%, #12161c 70%),
+      #10151b;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 12px 40px rgba(0,0,0,.55)}
+  .well video,.well img{width:88%;height:88%;object-fit:contain;
+    filter:drop-shadow(0 18px 22px rgba(0,0,0,.5))}
+  .well .placeholder{color:var(--ink-faint);font-family:var(--mono);font-size:12px;
+    letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:0 24px}
+  .readout{position:absolute;top:14px;left:0;right:0;text-align:center;
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--tungsten-soft);
+    transform:rotate(0)}
+  .readout.dim{color:var(--ink-faint)}
+
+  /* ---- stage tracker ---- */
+  .track-list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:2px}
+  .step{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:12px;
+    padding:7px 6px;border-radius:8px;font-size:13px;color:var(--ink-faint)}
+  .step .pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink-faint);
+    justify-self:center}
+  .step.done{color:var(--ink-dim)}
+  .step.done .pip{background:var(--ok);border-color:var(--ok)}
+  .step.active{color:var(--ink);background:var(--panel-2)}
+  .step.active .pip{background:var(--tungsten);border-color:var(--tungsten);
+    box-shadow:0 0 0 4px rgba(231,179,102,.16);animation:pulse 1.1s infinite}
+  .step .t{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  @keyframes pulse{50%{box-shadow:0 0 0 7px rgba(231,179,102,.04)}}
+
+  /* ---- control panel ---- */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:20px}
+  .panel h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-dim);margin:0 0 14px;font-weight:600}
+  .drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .drop{position:relative;aspect-ratio:1;border:1.5px dashed var(--line);border-radius:12px;
+    background:var(--panel-2);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:6px;cursor:pointer;overflow:hidden;transition:.18s;
+    text-align:center;padding:10px}
+  .drop:hover,.drop.over{border-color:var(--tungsten);background:#1e252f}
+  .drop .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-dim)}
+  .drop .hint{font-size:11px;color:var(--ink-faint)}
+  .drop.filled{border-style:solid;border-color:var(--daylight)}
+  .drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .drop .badge{position:absolute;top:8px;left:8px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.12em;background:rgba(10,13,17,.82);color:var(--ink);
+    padding:3px 7px;border-radius:20px;z-index:2}
+  input[type=file]{display:none}
+
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  .opt label{display:block;font-size:11px;color:var(--ink-faint);margin-bottom:5px;
+    font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+  .opt select{width:100%;background:var(--panel-2);color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-family:var(--mono);
+    font-size:13px;appearance:none}
+  .opt select:focus{outline:2px solid var(--tungsten);outline-offset:1px}
+
+  .go{margin-top:18px;width:100%;border:0;border-radius:11px;cursor:pointer;
+    padding:14px 16px;font-size:14px;font-weight:650;letter-spacing:.01em;color:#20160a;
+    background:linear-gradient(180deg,var(--tungsten-soft),var(--tungsten));
+    transition:.15s;font-family:var(--sans)}
+  .go:hover{filter:brightness(1.05)}
+  .go:disabled{background:var(--panel-2);color:var(--ink-faint);cursor:not-allowed}
+  .go.working{background:var(--panel-2);color:var(--tungsten-soft)}
+
+  .result{margin-top:16px;border-top:1px solid var(--line);padding-top:16px;display:none}
+  .result.show{display:block}
+  .metrics{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .metric{flex:1;min-width:92px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px}
+  .metric .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-faint)}
+  .metric .v{font-family:var(--mono);font-size:19px;color:var(--ink);margin-top:3px}
+  .metric .v small{font-size:11px;color:var(--ink-dim)}
+  .dl{display:inline-block;width:100%;text-align:center;text-decoration:none;
+    background:transparent;color:var(--daylight);border:1px solid var(--daylight);
+    border-radius:10px;padding:11px;font-size:13px;font-weight:600}
+  .dl:hover{background:rgba(120,182,221,.10)}
+  .err{color:var(--bad);font-size:13px;font-family:var(--mono);margin-top:10px}
+
+  footer{margin-top:40px;color:var(--ink-faint);font-size:11px;font-family:var(--mono);
+    letter-spacing:.06em;border-top:1px solid var(--line);padding-top:16px;
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  @media(prefers-reduced-motion:reduce){
+    .step.active .pip{animation:none}.dial .sweep{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Spin360<span class="dot">.</span></h1>
+      <span class="tag">front + back → 360° turn</span>
+    </div>
+    <p class="lede">Drop a front and a back photo of one product. Spin360 lifts it
+      off the background, rebuilds it in 3D, and films a seamless turntable loop.</p>
+  </header>
+
+  <div class="stage">
+    <!-- viewer / turntable dial -->
+    <section class="viewer">
+      <div class="dial" id="dial">
+        <div class="readout dim" id="readout">READY</div>
+        <svg viewBox="0 0 320 320">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#e7b366"/>
+              <stop offset="1" stop-color="#78b6dd"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="160" cy="160" r="150"/>
+          <circle class="sweep" id="sweep" cx="160" cy="160" r="150"
+                  stroke-dasharray="942" stroke-dashoffset="942"/>
+          <g class="ticks" id="ticks"></g>
+        </svg>
+        <div class="well" id="well">
+          <div class="placeholder" id="placeholder">the turn appears here</div>
+        </div>
+      </div>
+
+      <div class="track-list" id="steps"></div>
+    </section>
+
+    <!-- control panel -->
+    <aside class="panel">
+      <h2>The two shots</h2>
+      <div class="drops">
+        <label class="drop" id="dropFront">
+          <span class="lbl">Front</span>
+          <span class="hint">drop or choose</span>
+          <input type="file" id="fileFront" accept="image/png,image/jpeg">
+        </label>
+        <label class="drop" id="dropBack">
+          <span class="lbl">Back</span>
+          <span class="hint">drop or choose</span>
+          <input type="file" id="fileBack" accept="image/png,image/jpeg">
+        </label>
+      </div>
+
+      <div class="opts">
+        <div class="opt">
+          <label for="dur">Length</label>
+          <select id="dur">
+            <option value="3">3 seconds</option>
+            <option value="4" selected>4 seconds</option>
+            <option value="5">5 seconds</option>
+          </select>
+        </div>
+        <div class="opt">
+          <label for="res">Frame size</label>
+          <select id="res">
+            <option value="256">256 px</option>
+            <option value="512" selected>512 px</option>
+            <option value="768">768 px</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="go" id="go" disabled>Add both shots to begin</button>
+
+      <div class="result" id="result">
+        <div class="metrics">
+          <div class="metric"><div class="k">Spin quality</div>
+            <div class="v" id="mQuality">—</div></div>
+          <div class="metric"><div class="k">Length</div>
+            <div class="v" id="mLen">—</div></div>
+          <div class="metric"><div class="k">Build time</div>
+            <div class="v" id="mTime">—</div></div>
+        </div>
+        <a class="dl" id="dl" href="#" download>Download the MP4</a>
+      </div>
+      <div class="err" id="err"></div>
+    </aside>
+  </div>
+
+  <footer>
+    <span>deterministic vision pipeline · isolate → reconstruct → normalize → render → encode → check</span>
+    <span id="mode">mock reconstruction · cpu render</span>
+  </footer>
+</div>
+
+<script>
+// stage model — friendly studio language over the API's status enum
+const STEPS = [
+  {status:"isolating",     label:"Lifting it off the background"},
+  {status:"reconstructing",label:"Building the 3D model"},
+  {status:"normalizing",   label:"Setting it on the turntable"},
+  {status:"rendering",     label:"Filming the turn"},
+  {status:"encoding",      label:"Cutting the loop"},
+  {status:"quality",       label:"Checking the spin"},
+];
+const ORDER = ["queued","isolating","reconstructing","normalizing","rendering","encoding","quality","done"];
+const CIRC = 942; // 2πr, r=150
+
+const els = {
+  well:document.getElementById("well"), ph:document.getElementById("placeholder"),
+  sweep:document.getElementById("sweep"), readout:document.getElementById("readout"),
+  steps:document.getElementById("steps"), go:document.getElementById("go"),
+  result:document.getElementById("result"), err:document.getElementById("err"),
+  dl:document.getElementById("dl"),
+  mQ:document.getElementById("mQuality"), mL:document.getElementById("mLen"),
+  mT:document.getElementById("mTime"),
+};
+const files = {front:null, back:null};
+
+// tick marks every 30°
+(function ticks(){
+  const g=document.getElementById("ticks");
+  for(let a=0;a<360;a+=30){
+    const r1=150,r2=a%90===0?140:145,rad=a*Math.PI/180;
+    const x1=160+r1*Math.cos(rad),y1=160+r1*Math.sin(rad);
+    const x2=160+r2*Math.cos(rad),y2=160+r2*Math.sin(rad);
+    const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",x1);l.setAttribute("y1",y1);
+    l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+    g.appendChild(l);
+  }
+})();
+
+function renderSteps(activeIdx, done){
+  els.steps.innerHTML="";
+  STEPS.forEach((s,i)=>{
+    const cls = done||i<activeIdx ? "done" : i===activeIdx ? "active" : "";
+    const row=document.createElement("div");
+    row.className="step "+cls;
+    row.innerHTML=`<span class="pip"></span><span>${s.label}</span><span class="t" id="t${i}"></span>`;
+    els.steps.appendChild(row);
+  });
+}
+renderSteps(-1,false);
+
+function setProgress(frac){
+  els.sweep.setAttribute("stroke-dashoffset", CIRC*(1-Math.max(0,Math.min(1,frac))));
+}
+
+// dropzones
+function wireDrop(dropId, inputId, key){
+  const drop=document.getElementById(dropId), input=document.getElementById(inputId);
+  const take=(file)=>{
+    if(!file) return;
+    files[key]=file;
+    const url=URL.createObjectURL(file);
+    drop.classList.add("filled");
+    drop.querySelectorAll("img,.badge").forEach(n=>n.remove());
+    const img=document.createElement("img");img.src=url;drop.appendChild(img);
+    const b=document.createElement("span");b.className="badge";
+    b.textContent=key.toUpperCase();drop.appendChild(b);
+    refreshGo();
+  };
+  input.addEventListener("change",e=>take(e.target.files[0]));
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{
+    e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{
+    e.preventDefault();drop.classList.remove("over");}));
+  drop.addEventListener("drop",e=>take(e.dataTransfer.files[0]));
+}
+wireDrop("dropFront","fileFront","front");
+wireDrop("dropBack","fileBack","back");
+
+function refreshGo(){
+  const ready=files.front&&files.back;
+  els.go.disabled=!ready;
+  if(ready&&!els.go.classList.contains("working")) els.go.textContent="Spin it";
+}
+
+els.go.addEventListener("click", start);
+
+async function start(){
+  els.err.textContent=""; els.result.classList.remove("show");
+  els.go.disabled=true; els.go.classList.add("working"); els.go.textContent="Working…";
+  els.ph.textContent=""; els.well.querySelectorAll("video,img").forEach(n=>n.remove());
+  els.readout.classList.remove("dim");
+  renderSteps(0,false); setProgress(0.02);
+
+  const fd=new FormData();
+  fd.append("front_image",files.front);
+  fd.append("back_image",files.back);
+  fd.append("duration_s",document.getElementById("dur").value);
+  fd.append("fps","30");
+  fd.append("resolution",document.getElementById("res").value);
+
+  let job;
+  try{
+    const r=await fetch("/jobs",{method:"POST",body:fd});
+    if(!r.ok) throw new Error((await r.json()).detail||("HTTP "+r.status));
+    job=await r.json();
+  }catch(e){ return fail("Couldn't start: "+e.message); }
+  poll(job.job_id);
+}
+
+async function poll(id){
+  try{
+    const r=await fetch("/jobs/"+id);
+    const rec=await r.json();
+    paint(rec);
+    if(rec.status==="done") return done(rec);
+    if(rec.status==="failed"||rec.status==="needs_review")
+      return fail(rec.failure_reason||"The spin didn't pass the quality check.");
+    setTimeout(()=>poll(id),700);
+  }catch(e){ setTimeout(()=>poll(id),1000); }
+}
+
+function paint(rec){
+  const idx=Math.max(0,ORDER.indexOf(rec.status));
+  const frac=idx/(ORDER.length-1);
+  setProgress(frac);
+  const activeStep=Math.min(STEPS.length-1, ORDER.indexOf(rec.status)-1 < 0 ? 0 : ORDER.indexOf(rec.status)-1);
+  // map status -> active step index
+  const stepIdx = STEPS.findIndex(s=>s.status===rec.status);
+  renderSteps(stepIdx<0?STEPS.length:stepIdx,false);
+  const cur=STEPS.find(s=>s.status===rec.status);
+  els.readout.textContent=cur?cur.label.toUpperCase():rec.status.toUpperCase();
+  // fill in stage timings we already have
+  const t=rec.stage_timings_ms||{};
+  const keymap=["isolation","reconstruction","normalization","render","encode","quality"];
+  keymap.forEach((k,i)=>{
+    const cell=document.getElementById("t"+i);
+    if(cell&&t[k]!=null) cell.textContent=(t[k]/1000).toFixed(1)+"s";
+  });
+}
+
+function done(rec){
+  renderSteps(STEPS.length,true); setProgress(1);
+  els.readout.textContent="360° · DONE";
+  const v=document.createElement("video");
+  v.src="/jobs/"+rec.job_id+"/video"; v.autoplay=v.loop=v.muted=v.playsInline=true;
+  els.well.querySelectorAll("video,img,.placeholder").forEach(n=>n.remove());
+  els.well.appendChild(v);
+  els.mQ.innerHTML=Math.round((rec.quality_score||0)*100)+"<small>/100</small>";
+  els.mL.innerHTML=(rec.duration_s||0).toFixed(0)+"<small>s · "+(rec.resolution||"")+"</small>";
+  const total=Object.values(rec.stage_timings_ms||{}).reduce((a,b)=>a+b,0);
+  els.mT.innerHTML=(total/1000).toFixed(1)+"<small>s</small>";
+  els.dl.href="/jobs/"+rec.job_id+"/video";
+  els.result.classList.add("show");
+  resetGo();
+}
+
+function fail(msg){ els.err.textContent=msg; els.readout.textContent="STOPPED";
+  els.readout.classList.add("dim"); resetGo(); }
+function resetGo(){ els.go.classList.remove("working"); els.go.disabled=false;
+  els.go.textContent="Spin another"; }
+
+// reflect actual backend mode in the footer
+fetch("/healthz").then(r=>r.json()).then(h=>{
+  if(h&&h.provider) document.getElementById("mode").textContent =
+    h.provider.replace(/_/g," ")+" · turntable render";
+}).catch(()=>{});
+</script>
+</body>
+</html>

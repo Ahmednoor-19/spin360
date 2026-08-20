@@ -1,0 +1,30 @@
+# Modular monolith: one API app + background worker + queue +
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api:
+    build: .
+    depends_on: [redis]
+    ports: ["8000:8000"]
+    environment:
+      SPIN360_REDIS_URL: redis://redis:6379/0
+      SPIN360_RECON_PROVIDER: ${SPIN360_RECON_PROVIDER:-mock}
+      SPIN360_RENDER: ${SPIN360_RENDER:-cpu}
+      FAL_KEY: ${FAL_KEY:-}
+    volumes: ["spin360-data:/data"]
+
+  worker:
+    build: .
+    depends_on: [redis]
+    command: python -m spin360.worker
+    environment:
+      SPIN360_REDIS_URL: redis://redis:6379/0
+      SPIN360_RECON_PROVIDER: ${SPIN360_RECON_PROVIDER:-mock}
+      SPIN360_RENDER: ${SPIN360_RENDER:-cpu}
+      FAL_KEY: ${FAL_KEY:-}
+    volumes: ["spin360-data:/data"]
+    
+volumes:
+  spin360-data:
