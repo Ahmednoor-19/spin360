@@ -12,6 +12,7 @@ This module is executed *by Blender's own Python* (bpy), not the app venv.
 """
 import argparse
 import math
+import os
 import sys
 
 try:
@@ -170,7 +171,7 @@ def main():
         cam.location = (cx + radius * math.cos(ang) * math.cos(elev),
                         cy + radius * math.sin(ang) * math.cos(elev),
                         cz + radius * math.sin(elev))
-        scene.render.filepath = f"{args.out.rstrip('/')}/frame_{i:04d}.png"
+        scene.render.filepath = os.path.join(args.out, f"frame_{i:04d}.png")
         bpy.ops.render.render(write_still=True)
 
 

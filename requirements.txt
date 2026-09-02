@@ -4,6 +4,7 @@ uvicorn[standard]>=0.29
 python-multipart>=0.0.9          # UploadFile form parsing
 pydantic>=2.6
 SQLAlchemy>=2.0
+python-dotenv>=1.0               # loads .env into the process environment
 
 # --- queue ---
 rq>=1.16

@@ -19,12 +19,16 @@ def _hex_rgb(h: str) -> tuple[int, int, int]:
 # Production: Blender                                                          #
 # --------------------------------------------------------------------------- #
 def _render_blender(glb: Path, frames_dir: Path, n_frames: int, res: int, bg: str) -> None:
+    # Absolute paths only: Blender (and libraries loaded earlier in-process, e.g.
+    # rembg) can leave the CWD in a different place than expected, which silently
+    # breaks a relative --out path (frames get written who-knows-where and the
+    # encode stage then fails to find them).
     script = Path(__file__).resolve().parent.parent / "blender" / "turntable.py"
     cmd = [settings.blender_bin, "--background", "--python", str(script), "--",
-           "--glb", str(glb), "--out", str(frames_dir),
+           "--glb", str(glb.resolve()), "--out", str(frames_dir.resolve()),
            "--frames", str(n_frames), "--res", str(res), "--bg", bg.lstrip("#"),
            "--engine", settings.blender_engine, "--samples", str(settings.blender_samples)]
-    subprocess.run(cmd, check=True, timeout=settings.stage_timeout_s)
+    subprocess.run(cmd, check=True, timeout=settings.stage_timeout_s, cwd=Path.cwd())
 
 
 # --------------------------------------------------------------------------- #

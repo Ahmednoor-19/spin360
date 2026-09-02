@@ -8,6 +8,12 @@ Pipeline:
 upload → isolate → reconstruct (front+back → GLB) → normalize → render → encode → quality-gate → MP4
 ```
 
+## Demo
+
+Production path (`fal_trellis_multi` reconstruction + Blender Cycles render):
+
+<video src="assets/demo.mp4" controls width="360"></video>
+
 ## Why it runs anywhere (and where the real fidelity comes from)
 
 The one generative step (3D reconstruction) sits behind a **swappable provider
