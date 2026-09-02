@@ -12,7 +12,9 @@ upload → isolate → reconstruct (front+back → GLB) → normalize → render
 
 Production path (`fal_trellis_multi` reconstruction + Blender Cycles render):
 
-<video src="https://raw.githubusercontent.com/Ahmednoor-19/spin360/main/assets/demo.mp4" controls width="360"></video>
+<img src="https://raw.githubusercontent.com/Ahmednoor-19/spin360/main/assets/demo.gif" width="360" alt="360° product spin demo" />
+
+Full-quality MP4: [assets/demo.mp4](assets/demo.mp4)
 
 ## Why it runs anywhere (and where the real fidelity comes from)
 
